@@ -146,24 +146,9 @@ function Items() {
                     <Title order={5}>{item.name}</Title>
                     <Space h="20px" />
                     <Group position="center" spacing="5px">
-                      <Badge
-                        variant="gradient"
-                        gradient={{ from: "teal", to: "lime", deg: 105 }}
-                      >
-                        {item.quantity}
-                      </Badge>
-                      <Badge
-                        variant="gradient"
-                        gradient={{ from: "indigo", to: "cyan" }}
-                      >
-                        {item.unit}
-                      </Badge>
-                      <Badge
-                        variant="gradient"
-                        gradient={{ from: "red", to: "blue" }}
-                      >
-                        {item.priority}
-                      </Badge>
+                      <Badge color="yellow">{item.quantity}</Badge>
+                      <Badge color="green">{item.unit}</Badge>
+                      <Badge color="grape">{item.priority}</Badge>
                     </Group>
                     <Space h="20px" />
                     <Group position="apart">
@@ -171,7 +156,7 @@ function Items() {
                         component={Link}
                         to={"/items/" + item._id}
                         variant="gradient"
-                        gradient={{ from: "blue", to: "darkblue" }}
+                        gradient={{ from: "purple", to: "pink" }}
                         size="xs"
                         radius="50px"
                       >
@@ -190,7 +175,7 @@ function Items() {
                       </Button>
                       <Button
                         variant="gradient"
-                        gradient={{ from: "orange", to: "red" }}
+                        gradient={{ from: "purple", to: "pink" }}
                         size="xs"
                         radius="50px"
                         onClick={() => {
