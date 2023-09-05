@@ -13,6 +13,22 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { notifications } from "@mantine/notifications";
 import { useEffect, useState } from "react";
 import axios from "axios";
+import { useQuery, useMutation } from "@tanstack/react-query";
+
+const getItem = async (id) => {
+  const response = await axios.get("http://localhost:5000/item/" + id);
+  return response.data;
+};
+
+const updateItem = async ({ id, data }) => {
+  const response = await axios({
+    method: "PUT",
+    url: "http://localhost:5000/item/" + id,
+    headers: { "Content-Type": "application/json" },
+    data: data,
+  });
+  return response.data;
+};
 
 function MoviesEdit() {
   const { id } = useParams();
@@ -21,53 +37,90 @@ function MoviesEdit() {
   const [quantity, setQuantity] = useState(1);
   const [unit, setUnit] = useState("");
   const [priority, setPriority] = useState("");
+  const { data } = useQuery({
+    queryKey: ["item", id],
+    queryFn: () => getItem(id),
+    onSuccess: (data) => {
+      setName(data.name);
+      setPriority(data.priority);
+      setUnit(data.unit);
+      setQuantity(data.quantity);
+    },
+  });
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:5000/item/" + id)
-      .then((response) => {
-        setName(response.data.name);
-        setPriority(response.data.priority);
-        setUnit(response.data.unit);
-        setQuantity(response.data.release_year);
-      })
-      .catch((error) => {
-        notifications.show({
-          title: error.response.data.message,
-          color: "red",
-        });
-      });
-  }, []);
+  // useEffect(() => {
+  //   axios
+  //     .get("http://localhost:5000/item/" + id)
+  //     .then((response) => {
+  //       setName(response.data.name);
+  //       setPriority(response.data.priority);
+  //       setUnit(response.data.unit);
+  //       setQuantity(response.data.quantity);
+  //     })
+  //     .catch((error) => {
+  //       notifications.show({
+  //         title: error.response.data.message,
+  //         color: "red",
+  //       });
+  //     });
+  // }, []);
 
-  const handleUpdateItem = async (event) => {
-    event.preventDefault();
-    // const response = await axios.post("http://localhost:5000/movie");
-    try {
-      const response = await axios({
-        method: "PUT",
-        url: "http://localhost:5000/item/" + id,
-        headers: { "Content-Type": "application/json" },
-        data: JSON.stringify({
-          name: name,
-          quantity: quantity,
-          unit: unit,
-          priority: priority,
-        }),
-      });
-      // show add success message
+  const updateMutation = useMutation({
+    mutationFn: updateItem,
+    onSuccess: () => {
       notifications.show({
         title: "Item Edited",
         color: "green",
       });
       //redirect back to home page
       navigate("/");
-    } catch (error) {
-      console.log(error);
+    },
+    onError: (error) => {
       notifications.show({
         title: error.response.data.message,
         color: "red",
       });
-    }
+    },
+  });
+
+  const handleUpdateItem = async (event) => {
+    event.preventDefault();
+    updateMutation.mutate({
+      id: id,
+      data: JSON.stringify({
+        name: name,
+        quantity: quantity,
+        unit: unit,
+        priority: priority,
+      }),
+    });
+    // const response = await axios.post("http://localhost:5000/movie");
+    //   try {
+    //     const response = await axios({
+    //       method: "PUT",
+    //       url: "http://localhost:5000/item/" + id,
+    //       headers: { "Content-Type": "application/json" },
+    //       data: JSON.stringify({
+    //         name: name,
+    //         quantity: quantity,
+    //         unit: unit,
+    //         priority: priority,
+    //       }),
+    //     });
+    //     // show add success message
+    //     notifications.show({
+    //       title: "Item Edited",
+    //       color: "green",
+    //     });
+    //     //redirect back to home page
+    //     navigate("/");
+    //   } catch (error) {
+    //     console.log(error);
+    //     notifications.show({
+    //       title: error.response.data.message,
+    //       color: "red",
+    //     });
+    //   }
   };
 
   return (

@@ -1,85 +1,190 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Title, Grid, Card, Badge, Group, Space, Button } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
+
+const fetchItems = async (priority, purchased) => {
+  if (priority !== "") {
+    const response = await axios.get(
+      "http://localhost:5000/item?priority=" + priority
+    );
+    return response.data;
+  } else if (purchased !== "") {
+    const response = await axios.get(
+      "http://localhost:5000/item?purchased=" + purchased
+    );
+    return response.data;
+  } else {
+    const response = await axios.get("http://localhost:5000/item");
+    return response.data;
+  }
+};
+
+const updateItem = async (item_id = "") => {
+  await axios({
+    method: "PUT",
+    url: "http://localhost:5000/item/" + item_id + "/purchased",
+  });
+};
+
+const deleteItem = async (item_id = "") => {
+  await axios({
+    method: "DELETE",
+    url: "http://localhost:5000/item/" + item_id,
+  });
+};
 
 function Items() {
-  const [items, setItems] = useState([]);
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  // const [items, setItems] = useState("");
+  const [purchased, setPurchased] = useState("");
+  const [priority, setPriority] = useState("");
+  const {
+    isLoading,
+    isError,
+    data: items,
+    error,
+  } = useQuery({
+    queryKey: ["items", priority, purchased],
+    queryFn: () => fetchItems(priority, purchased),
+  });
 
-  useEffect(() => {
-    axios
-      .get("http://localhost:5000/item")
-      .then((response) => {
-        setItems(response.data);
-      })
-      .catch((error) => {
-        console.log(error);
+  console.log(items);
+
+  const memoryItems = queryClient.getQueryData(["items", "", ""]);
+  const priorityOptions = useMemo(() => {
+    let options = [];
+    if (items && items.length > 0) {
+      items.forEach((item) => {
+        if (!options.includes(item.priority)) {
+          options.push(item.priority);
+        }
       });
-  }, []);
-
-  const filterItem1 = async (priority = "") => {
-    try {
-      const response = await axios.get(
-        "http://localhost:5000/item?priority=" + priority
-      );
-      setItems(response.data);
-    } catch (error) {
-      console.log(error);
     }
-  };
+    // console.log(options);
+    return options;
+  }, [memoryItems]);
 
-  const filterItem2 = async (purchased = "") => {
-    try {
-      const response = await axios.get(
-        "http://localhost:5000/item?purchased=" + purchased
-      );
-      setItems(response.data);
-    } catch (error) {
-      console.log(error);
-    }
-  };
+  // const purchasedOptions = useMemo(() => {
+  //   let options = [];
+  //   if (items && items.length > 0) {
+  //     items.forEach((item) => {
+  //       if (!options.includes(item.purchased)) {
+  //         options.push(item.purchased);
+  //       }
+  //     });
+  //   }
+  //   return options;
+  // }, [memoryItems]);
 
-  const handleItemDelete = async (item_id) => {
-    try {
-      await axios({
-        method: "DELETE",
-        url: "http://localhost:5000/item/" + item_id,
+  const updateMutation = useMutation({
+    mutationFn: updateItem,
+    onSuccess: () => {
+      //triggered when API successfully executed
+      queryClient.invalidateQueries({
+        //ask React query to retrigger the API
+        queryKey: ["items", priority, purchased],
       });
+
       notifications.show({
-        title: "Item Deleted",
+        title: "Updated Purchase",
         color: "green",
       });
-      const newitems = items.filter((i) => i._id !== item_id);
-      setItems(newitems);
-    } catch (error) {
-      notifications.show({
-        title: error.response.data.message,
-        color: "red",
-      });
-    }
-  };
+    },
+  });
 
-  const PurchasedUpdate = async (item_id) => {
-    try {
-      await axios.put(`http://localhost:5000/item/${item_id}`, {
-        purchased: true,
+  const deleteMutation = useMutation({
+    mutationFn: deleteItem,
+    onSuccess: () => {
+      //triggered when API successfully executed
+      queryClient.invalidateQueries({
+        //ask React query to retrigger the API
+        queryKey: ["items", priority, purchased],
       });
 
       notifications.show({
-        title: "Purchsed Updated",
+        title: "Item deleted",
         color: "green",
       });
+    },
+  });
 
-      const updatedItems = items.filter((i) => i._id !== item_id);
-      setItems(updatedItems);
-    } catch (error) {
-      notifications.show({
-        title: error.response.data.message,
-        color: "red",
-      });
-    }
-  };
+  // useEffect(() => {
+  //   axios
+  //     .get("http://localhost:5000/item")
+  //     .then((response) => {
+  //       setItems(response.data);
+  //     })
+  //     .catch((error) => {
+  //       console.log(error);
+  //     });
+  // }, []);
+
+  // const filterItem1 = async (priority = "") => {
+  //   try {
+  //     const response = await axios.get(
+  //       "http://localhost:5000/item?priority=" + priority
+  //     );
+  //     setItems(response.data);
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+  // const filterItem2 = async (purchased = "") => {
+  //   try {
+  //     const response = await axios.get(
+  //       "http://localhost:5000/item?purchased=" + purchased
+  //     );
+  //     setItems(response.data);
+  //   } catch (error) {
+  //     console.log(error);
+  //   }
+  // };
+
+  // const handleItemDelete = async (item_id) => {
+  //   try {
+  //     await axios({
+  //       method: "DELETE",
+  //       url: "http://localhost:5000/item/" + item_id,
+  //     });
+  //     notifications.show({
+  //       title: "Item Deleted",
+  //       color: "green",
+  //     });
+  //     const newitems = items.filter((i) => i._id !== item_id);
+  //     setItems(newitems);
+  //   } catch (error) {
+  //     notifications.show({
+  //       title: error.response.data.message,
+  //       color: "red",
+  //     });
+  //   }
+  // };
+
+  // const PurchasedUpdate = async (item_id) => {
+  //   try {
+  //     await axios.put(`http://localhost:5000/item/${item_id}`, {
+  //       purchased: true,
+  //     });
+
+  //     notifications.show({
+  //       title: "Purchsed Updated",
+  //       color: "green",
+  //     });
+
+  //     const updatedItems = items.filter((i) => i._id !== item_id);
+  //     setItems(updatedItems);
+  //   } catch (error) {
+  //     notifications.show({
+  //       title: error.response.data.message,
+  //       color: "red",
+  //     });
+  //   }
+  // };
 
   return (
     <>
@@ -93,7 +198,34 @@ function Items() {
       </Group>
       <Space h="20px" />
       <Group>
-        <Button
+        <select
+          value={priority}
+          onChange={(event) => {
+            setPriority(event.target.value);
+          }}
+        >
+          <option value="">All priority</option>
+          {priorityOptions.map((priority) => {
+            console.log(priorityOptions);
+            return (
+              <option key={priority} value={priority}>
+                {priority}
+              </option>
+            );
+          })}
+        </select>
+
+        <select
+          value={purchased}
+          onChange={(event) => {
+            setPurchased(event.target.value);
+          }}
+        >
+          <option value="">All purchased</option>
+          <option value="yes">Purchased</option>
+          <option value="no">Unpurchased</option>
+        </select>
+        {/* <Button
           onClick={() => {
             filterItem1("");
           }}
@@ -120,8 +252,8 @@ function Items() {
           }}
         >
           High
-        </Button>
-        <Button
+        </Button> */}
+        {/* <Button
           onClick={() => {
             filterItem2("no");
           }}
@@ -134,7 +266,7 @@ function Items() {
           }}
         >
           Purchased
-        </Button>
+        </Button> */}
       </Group>
       <Space h="20px" />
       <Grid>
@@ -168,7 +300,7 @@ function Items() {
                         size="xs"
                         radius="50px"
                         onClick={() => {
-                          PurchasedUpdate(item._id);
+                          updateMutation.mutate(item._id);
                         }}
                       >
                         Purchased
@@ -179,7 +311,7 @@ function Items() {
                         size="xs"
                         radius="50px"
                         onClick={() => {
-                          handleItemDelete(item._id);
+                          deleteMutation.mutate(item._id);
                         }}
                       >
                         Delete
