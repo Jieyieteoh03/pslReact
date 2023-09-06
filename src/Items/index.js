@@ -6,20 +6,28 @@ import { notifications } from "@mantine/notifications";
 import { useQuery, useQueryClient, useMutation } from "@tanstack/react-query";
 
 const fetchItems = async (priority, purchased) => {
-  if (priority !== "") {
-    const response = await axios.get(
-      "http://localhost:5000/item?priority=" + priority
-    );
-    return response.data;
-  } else if (purchased !== "") {
-    const response = await axios.get(
-      "http://localhost:5000/item?purchased=" + purchased
-    );
-    return response.data;
-  } else {
-    const response = await axios.get("http://localhost:5000/item");
-    return response.data;
-  }
+  //   if (priority !== "") {
+  //     const response = await axios.get(
+  //       "http://localhost:5000/item?priority=" + priority
+  //     );
+  //     return response.data;
+  //   } else if (purchased !== "") {
+  //     const response = await axios.get(
+  //       "http://localhost:5000/item?purchased=" + purchased
+  //     );
+  //     return response.data;
+  //   } else {
+  //     const response = await axios.get("http://localhost:5000/item");
+  //     return response.data;
+  //   }
+  // };
+
+  const response = await axios.get(
+    "http://localhost:5000/item?" +
+      (priority !== "" ? "priority=" + priority : "") +
+      (purchased !== "" ? "&purchased=" + purchased : "")
+  );
+  return response.data;
 };
 
 const updateItem = async (item_id = "") => {
@@ -303,7 +311,7 @@ function Items() {
                           updateMutation.mutate(item._id);
                         }}
                       >
-                        Purchased
+                        {item.purchased ? "Purchased" : "Mark as Purchased"}
                       </Button>
                       <Button
                         variant="gradient"
